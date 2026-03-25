@@ -28,11 +28,15 @@ const LoginScreen = ({ navigation, setIsLoggedIn }) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>BuddyUp</Text>
-            <Text style={styles.tagline}>Connect, Collaborate & Grow</Text>
-          </View>
+        {/* Logo Section */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoText}>BuddyUp</Text>
+          <Text style={styles.tagline}>Connect, Collaborate & Grow</Text>
         </View>
 
         <View style={styles.form}>
@@ -82,10 +86,27 @@ const LoginScreen = ({ navigation, setIsLoggedIn }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  header: { marginBottom: 48 },
-  logoContainer: { alignItems: 'center' },
-  logoText: { fontSize: 48, fontWeight: 'bold', color: '#A30000', marginBottom: 8 },
-  tagline: { fontSize: 16, color: '#6B7280', textAlign: 'center' },
+  logoContainer: { 
+    alignItems: 'center', 
+    marginBottom: 48 
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 16,
+    borderRadius: 25,
+  },
+  logoText: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: '#A30000', 
+    marginBottom: 8 
+  },
+  tagline: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    textAlign: 'center' 
+  },
   form: { gap: 16 },
   inputContainer: { gap: 8 },
   label: { fontSize: 14, fontWeight: '600', color: '#374151' },

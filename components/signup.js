@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { signupUser } from '../utils/localAuth';
 
 const SignupScreen = ({ navigation }) => {
@@ -41,9 +41,15 @@ const SignupScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
-        <View style={styles.header}>
+        {/* Logo Section */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.logoText}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the BuddyUp community</Text>
+          <Text style={styles.tagline}>Join the BuddyUp community</Text>
         </View>
 
         <View style={styles.form}>
@@ -106,9 +112,27 @@ const SignupScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  header: { marginBottom: 40, alignItems: 'center' },
-  logoText: { fontSize: 32, fontWeight: 'bold', color: '#A30000', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#6B7280' },
+  logoContainer: { 
+    alignItems: 'center', 
+    marginBottom: 40 
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+    borderRadius: 20,
+  },
+  logoText: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    color: '#A30000', 
+    marginBottom: 8 
+  },
+  tagline: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    textAlign: 'center' 
+  },
   form: { gap: 16 },
   inputContainer: { gap: 8 },
   label: { fontSize: 14, fontWeight: '600', color: '#374151' },

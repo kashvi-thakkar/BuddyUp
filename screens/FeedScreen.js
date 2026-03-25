@@ -4,13 +4,14 @@ import { posts } from '../data/posts';
 import { rankPosts } from '../utils/feedRanking';
 import { UserContext } from '../context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import LogoHeader from '../components/LogoHeader';
 
-const FeedScreen = () => {
+const FeedScreen = ({ navigation }) => {
   const [rankedPosts, setRankedPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
 
   const currentUser = {
     interests: user.interests || ['AI', 'Development', 'Programming'],
@@ -42,6 +43,11 @@ const FeedScreen = () => {
     Alert.alert('Success', 'Reply sent successfully!');
     setReplyText('');
     setModalVisible(false);
+  };
+
+  const handleLogout = () => {
+    setUser({ email: '', skills: [], interests: [], connections: [] });
+    navigation.replace('Login');
   };
 
   const getCategoryIcon = (type) => {
@@ -104,6 +110,8 @@ const FeedScreen = () => {
 
   return (
     <View style={styles.container}>
+      <LogoHeader screenName="Feed" onLogout={handleLogout} />
+      
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Feed</Text>
         <Text style={styles.headerSubtitle}>Personalized for your interests</Text>
@@ -163,18 +171,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: { 
     paddingHorizontal: 20, 
-    paddingTop: 20, 
-    paddingBottom: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderBottomWidth: 1, 
+    paddingTop: 16, 
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  headerTitle: { fontSize: 32, fontWeight: 'bold', color: '#111827' },
+  headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#111827' },
   headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 4 },
   listContainer: { padding: 16 },
   postCard: { 

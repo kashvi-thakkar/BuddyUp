@@ -10,6 +10,7 @@ export default function ProfileScreen({ setIsLoggedIn }) {
   const [interests, setInterests] = useState(user.interests?.join(', ') || '');
 
   const handleLogout = () => {
+    setUser({ email: '', skills: [], interests: [], connections: [] });
     if (setIsLoggedIn) {
       setIsLoggedIn(false);
     }
@@ -33,7 +34,7 @@ export default function ProfileScreen({ setIsLoggedIn }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+      <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarText}>{user.email?.charAt(0).toUpperCase() || 'U'}</Text>
         </View>
@@ -43,6 +44,11 @@ export default function ProfileScreen({ setIsLoggedIn }) {
         <TouchableOpacity style={styles.editButton} onPress={() => setEditModalVisible(true)}>
           <Ionicons name="create-outline" size={18} color="#A30000" />
           <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
 
@@ -83,11 +89,6 @@ export default function ProfileScreen({ setIsLoggedIn }) {
           )}
         </View>
       </View>
-
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
 
       <Modal
         animationType="slide"
@@ -133,34 +134,184 @@ export default function ProfileScreen({ setIsLoggedIn }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { alignItems: 'center', backgroundColor: '#FFFFFF', paddingVertical: 32, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#A30000', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  avatarText: { fontSize: 40, fontWeight: 'bold', color: '#FFFFFF' },
-  name: { fontSize: 24, fontWeight: 'bold', color: '#111827', marginBottom: 4 },
-  email: { fontSize: 14, color: '#6B7280', marginBottom: 16 },
-  editButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#FEF2F2' },
-  editButtonText: { fontSize: 14, color: '#A30000', fontWeight: '600' },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', padding: 20, backgroundColor: '#FFFFFF', marginTop: 1 },
-  statCard: { alignItems: 'center', gap: 8 },
-  statValue: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
-  statLabel: { fontSize: 12, color: '#6B7280' },
-  section: { backgroundColor: '#FFFFFF', marginTop: 12, padding: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 12 },
-  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  skillBadge: { backgroundColor: '#FEF2F2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  skillText: { fontSize: 14, color: '#A30000', fontWeight: '500' },
-  interestBadge: { backgroundColor: '#F0FDF4', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  interestText: { fontSize: 14, color: '#10B981', fontWeight: '500' },
-  emptyText: { fontSize: 14, color: '#9CA3AF', fontStyle: 'italic' },
-  logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#A30000', margin: 20, paddingVertical: 14, borderRadius: 12 },
-  logoutButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, width: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-  inputLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 16, color: '#111827', marginBottom: 20, backgroundColor: '#F9FAFB' },
-  saveButton: { backgroundColor: '#A30000', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F9FAFB' 
+  },
+  profileHeader: { 
+    alignItems: 'center', 
+    backgroundColor: '#FFFFFF', 
+    paddingVertical: 32, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: 20,
+  },
+  avatarContainer: { 
+    width: 100, 
+    height: 100, 
+    borderRadius: 50, 
+    backgroundColor: '#A30000', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  avatarText: { 
+    fontSize: 40, 
+    fontWeight: 'bold', 
+    color: '#FFFFFF' 
+  },
+  name: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#111827', 
+    marginBottom: 4 
+  },
+  email: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    marginBottom: 16 
+  },
+  editButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6, 
+    paddingVertical: 8, 
+    paddingHorizontal: 16, 
+    borderRadius: 20, 
+    backgroundColor: '#FEF2F2',
+    marginBottom: 12,
+  },
+  editButtonText: { 
+    fontSize: 14, 
+    color: '#A30000', 
+    fontWeight: '600' 
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#A30000',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    marginTop: 8,
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  statsContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    padding: 20, 
+    backgroundColor: '#FFFFFF', 
+    marginTop: 1 
+  },
+  statCard: { 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  statValue: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#111827' 
+  },
+  statLabel: { 
+    fontSize: 12, 
+    color: '#6B7280' 
+  },
+  section: { 
+    backgroundColor: '#FFFFFF', 
+    marginTop: 12, 
+    padding: 20 
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    color: '#111827', 
+    marginBottom: 12 
+  },
+  skillsContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 8 
+  },
+  skillBadge: { 
+    backgroundColor: '#FEF2F2', 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 8 
+  },
+  skillText: { 
+    fontSize: 14, 
+    color: '#A30000', 
+    fontWeight: '500' 
+  },
+  interestBadge: { 
+    backgroundColor: '#F0FDF4', 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 8 
+  },
+  interestText: { 
+    fontSize: 14, 
+    color: '#10B981', 
+    fontWeight: '500' 
+  },
+  emptyText: { 
+    fontSize: 14, 
+    color: '#9CA3AF', 
+    fontStyle: 'italic' 
+  },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  modalContent: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 20, 
+    padding: 20, 
+    width: '90%' 
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 20 
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#111827' 
+  },
+  inputLabel: { 
+    fontSize: 14, 
+    fontWeight: '500', 
+    color: '#374151', 
+    marginBottom: 8 
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: '#E5E7EB', 
+    borderRadius: 12, 
+    padding: 12, 
+    fontSize: 16, 
+    color: '#111827', 
+    marginBottom: 20, 
+    backgroundColor: '#F9FAFB' 
+  },
+  saveButton: { 
+    backgroundColor: '#A30000', 
+    paddingVertical: 14, 
+    borderRadius: 12, 
+    alignItems: 'center' 
+  },
+  saveButtonText: { 
+    color: '#FFFFFF', 
+    fontSize: 16, 
+    fontWeight: '600' 
+  },
 });

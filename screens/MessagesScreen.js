@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LogoHeader from '../components/LogoHeader';
+import { UserContext } from '../context/UserContext';
 
-export default function MessagesScreen() {
+export default function MessagesScreen({ navigation }) {
   const [messages, setMessages] = useState([
     { id: '1', text: 'Hi! Are you interested in collaborating on a project?', sender: 'other', timestamp: '10:30 AM' },
     { id: '2', text: 'Yes, I would love to! What kind of project?', sender: 'me', timestamp: '10:32 AM' },
   ]);
   const [input, setInput] = useState('');
+  const { setUser } = useContext(UserContext);
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -23,6 +26,11 @@ export default function MessagesScreen() {
     setInput('');
   };
 
+  const handleLogout = () => {
+    setUser({ email: '', skills: [], interests: [], connections: [] });
+    navigation.replace('Login');
+  };
+
   const renderMessage = ({ item }) => (
     <View style={[styles.messageContainer, item.sender === 'me' ? styles.myMessage : styles.otherMessage]}>
       <Text style={[styles.messageText, item.sender === 'me' ? styles.myMessageText : styles.otherMessageText]}>
@@ -34,6 +42,8 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
+      <LogoHeader screenName="Messages" onLogout={handleLogout} />
+      
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
         <Text style={styles.headerSubtitle}>Connect with your peers</Text>
@@ -66,7 +76,14 @@ export default function MessagesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: 16, 
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#111827' },
   headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 4 },
   messagesList: { padding: 16 },
@@ -77,7 +94,33 @@ const styles = StyleSheet.create({
   myMessageText: { color: '#FFFFFF' },
   otherMessageText: { color: '#111827' },
   timestamp: { fontSize: 10, color: '#9CA3AF', marginTop: 4, alignSelf: 'flex-end' },
-  inputContainer: { flexDirection: 'row', padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6', alignItems: 'flex-end' },
-  input: { flex: 1, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, fontSize: 16, color: '#111827', backgroundColor: '#F9FAFB', maxHeight: 100 },
-  sendButton: { backgroundColor: '#A30000', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+  inputContainer: { 
+    flexDirection: 'row', 
+    padding: 16, 
+    backgroundColor: '#FFFFFF', 
+    borderTopWidth: 1, 
+    borderTopColor: '#F3F4F6', 
+    alignItems: 'flex-end' 
+  },
+  input: { 
+    flex: 1, 
+    borderWidth: 1, 
+    borderColor: '#E5E7EB', 
+    borderRadius: 20, 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    fontSize: 16, 
+    color: '#111827', 
+    backgroundColor: '#F9FAFB', 
+    maxHeight: 100 
+  },
+  sendButton: { 
+    backgroundColor: '#A30000', 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginLeft: 12 
+  },
 });
