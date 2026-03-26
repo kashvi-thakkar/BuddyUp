@@ -1,16 +1,19 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Modal, Alert, Image } from 'react-native';
 import { posts } from '../data/posts';
 import { rankPosts } from '../utils/feedRanking';
 import { UserContext } from '../context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import LogoHeader from '../components/LogoHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FeedScreen = ({ navigation }) => {
   const [rankedPosts, setRankedPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [likedPosts, setLikedPosts] = useState([]);
+  const [comments, setComments] = useState({});
   const { user, setUser } = useContext(UserContext);
 
   const currentUser = {
@@ -19,6 +22,7 @@ const FeedScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadFeed();
+    loadUserInteractions();
   }, []);
 
   const loadFeed = () => {
@@ -26,29 +30,86 @@ const FeedScreen = ({ navigation }) => {
     setRankedPosts(sorted);
   };
 
-  const handleLike = (postId) => {
-    setRankedPosts(prev =>
-      prev.map(post =>
-        post.id === postId ? { ...post, likes: post.likes + 1 } : post
-      )
-    );
+  const loadUserInteractions = async () => {
+    try {
+      const savedLikes = await AsyncStorage.getItem('likedPosts');
+      if (savedLikes) setLikedPosts(JSON.parse(savedLikes));
+      
+      const savedComments = await AsyncStorage.getItem('comments');
+      if (savedComments) setComments(JSON.parse(savedComments));
+    } catch (error) {
+      console.error('Error loading interactions:', error);
+    }
   };
 
-  const handleReply = () => {
+  const handleLike = async (postId) => {
+    const isLiked = likedPosts.includes(postId);
+    
+    if (isLiked) {
+      setLikedPosts(likedPosts.filter(id => id !== postId));
+      setRankedPosts(prev =>
+        prev.map(post =>
+          post.id === postId ? { ...post, likes: post.likes - 1 } : post
+        )
+      );
+    } else {
+      setLikedPosts([...likedPosts, postId]);
+      setRankedPosts(prev =>
+        prev.map(post =>
+          post.id === postId ? { ...post, likes: post.likes + 1 } : post
+        )
+      );
+    }
+    
+    await AsyncStorage.setItem('likedPosts', JSON.stringify(
+      isLiked ? likedPosts.filter(id => id !== postId) : [...likedPosts, postId]
+    ));
+  };
+
+  const handleReply = async () => {
     if (!replyText.trim()) {
       Alert.alert('Error', 'Please enter a reply');
       return;
     }
     
-    Alert.alert('Success', 'Reply sent successfully!');
+    const newComment = {
+      id: Date.now().toString(),
+      text: replyText,
+      userName: user.email?.split('@')[0] || 'User',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    
+    const updatedComments = {
+      ...comments,
+      [selectedPost.id]: [...(comments[selectedPost.id] || []), newComment]
+    };
+    
+    setComments(updatedComments);
+    await AsyncStorage.setItem('comments', JSON.stringify(updatedComments));
+    
+    setRankedPosts(prev =>
+      prev.map(post =>
+        post.id === selectedPost.id ? { ...post, replies: post.replies + 1 } : post
+      )
+    );
+    
+    Alert.alert('Success', 'Reply posted successfully!');
     setReplyText('');
     setModalVisible(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+  try {
+    await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('likedPosts');
+    await AsyncStorage.removeItem('comments');
+    await AsyncStorage.removeItem('messages');
     setUser({ email: '', skills: [], interests: [], connections: [] });
     navigation.replace('Login');
-  };
+  } catch (error) {
+    Alert.alert('Error', 'Failed to logout. Please try again.');
+  }
+};
 
   const getCategoryIcon = (type) => {
     switch(type) {
@@ -68,49 +129,62 @@ const FeedScreen = ({ navigation }) => {
     }
   };
 
-  const renderPost = ({ item }) => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.type) + '15' }]}>
-          <Ionicons name={getCategoryIcon(item.type)} size={14} color={getCategoryColor(item.type)} />
-          <Text style={[styles.categoryText, { color: getCategoryColor(item.type) }]}>{item.type}</Text>
+  const renderPost = ({ item }) => {
+    const isLiked = likedPosts.includes(item.id);
+    const postComments = comments[item.id] || [];
+    
+    return (
+      <View style={styles.postCard}>
+        <View style={styles.postHeader}>
+          <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.type) + '15' }]}>
+            <Ionicons name={getCategoryIcon(item.type)} size={14} color={getCategoryColor(item.type)} />
+            <Text style={[styles.categoryText, { color: getCategoryColor(item.type) }]}>{item.type}</Text>
+          </View>
+          <View style={styles.relevanceBadge}>
+            <Ionicons name="trending-up" size={12} color="#6B7280" />
+            <Text style={styles.relevanceText}>Score: {item.score}</Text>
+          </View>
         </View>
-        <View style={styles.relevanceBadge}>
-          <Ionicons name="trending-up" size={12} color="#6B7280" />
-          <Text style={styles.relevanceText}>Score: {item.score}</Text>
+
+        <Text style={styles.postTitle}>{item.title}</Text>
+        
+        {item.description && (
+          <Text style={styles.postDescription}>{item.description}</Text>
+        )}
+
+        <View style={styles.postFooter}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(item.id)}>
+            <Ionicons name={isLiked ? "heart" : "heart-outline"} size={20} color={isLiked ? "#A30000" : "#6B7280"} />
+            <Text style={[styles.actionText, isLiked && styles.likedText]}>{item.likes}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={() => {
+            setSelectedPost(item);
+            setModalVisible(true);
+          }}>
+            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
+            <Text style={styles.actionText}>{item.replies + postComments.length}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="share-outline" size={20} color="#6B7280" />
+          </TouchableOpacity>
         </View>
+        
+        {postComments.length > 0 && (
+          <View style={styles.commentsPreview}>
+            <Text style={styles.commentsPreviewText}>
+              💬 {postComments.length} comment{postComments.length > 1 ? 's' : ''}
+            </Text>
+          </View>
+        )}
       </View>
-
-      <Text style={styles.postTitle}>{item.title}</Text>
-      
-      {item.description && (
-        <Text style={styles.postDescription}>{item.description}</Text>
-      )}
-
-      <View style={styles.postFooter}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(item.id)}>
-          <Ionicons name="heart-outline" size={20} color="#6B7280" />
-          <Text style={styles.actionText}>{item.likes}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={() => {
-          setSelectedPost(item);
-          setModalVisible(true);
-        }}>
-          <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
-          <Text style={styles.actionText}>{item.replies}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="share-outline" size={20} color="#6B7280" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <LogoHeader screenName="Feed" onLogout={handleLogout} />
+      <LogoHeader screenName="FeedScreen" onLogout={handleLogout} navigation={navigation} />
       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Feed</Text>
@@ -142,6 +216,16 @@ const FeedScreen = ({ navigation }) => {
             
             <Text style={styles.modalSubtitle}>{selectedPost?.title}</Text>
             
+            <View style={styles.commentsList}>
+              {comments[selectedPost?.id]?.map((comment) => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <Text style={styles.commentUser}>{comment.userName}</Text>
+                  <Text style={styles.commentText}>{comment.text}</Text>
+                  <Text style={styles.commentTime}>{comment.timestamp}</Text>
+                </View>
+              ))}
+            </View>
+            
             <TextInput
               style={styles.replyInput}
               placeholder="Write your reply..."
@@ -149,7 +233,7 @@ const FeedScreen = ({ navigation }) => {
               value={replyText}
               onChangeText={setReplyText}
               multiline
-              numberOfLines={4}
+              numberOfLines={3}
             />
             
             <View style={styles.modalButtons}>
@@ -157,7 +241,7 @@ const FeedScreen = ({ navigation }) => {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalButton, styles.sendButton]} onPress={handleReply}>
-                <Text style={styles.sendButtonText}>Send Reply</Text>
+                <Text style={styles.sendButtonText}>Post Reply</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -237,6 +321,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   actionText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  likedText: { color: '#A30000' },
+  commentsPreview: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  commentsPreviewText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
   modalOverlay: { 
     flex: 1, 
     backgroundColor: 'rgba(0, 0, 0, 0.5)', 
@@ -247,7 +342,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24, 
     borderTopRightRadius: 24, 
     padding: 20, 
-    minHeight: 320 
+    maxHeight: '80%',
   },
   modalHeader: { 
     flexDirection: 'row', 
@@ -256,7 +351,32 @@ const styles = StyleSheet.create({
     marginBottom: 8 
   },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-  modalSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 20, fontWeight: '500' },
+  modalSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 16, fontWeight: '500' },
+  commentsList: {
+    maxHeight: 200,
+    marginBottom: 16,
+  },
+  commentItem: {
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  commentUser: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#A30000',
+    marginBottom: 4,
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  commentTime: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
   replyInput: { 
     borderWidth: 1, 
     borderColor: '#E5E7EB', 
@@ -264,9 +384,9 @@ const styles = StyleSheet.create({
     padding: 12, 
     fontSize: 16, 
     color: '#111827', 
-    minHeight: 100, 
+    minHeight: 80, 
     textAlignVertical: 'top', 
-    marginBottom: 20,
+    marginBottom: 16,
     backgroundColor: '#F9FAFB',
   },
   modalButtons: { flexDirection: 'row', gap: 12 },

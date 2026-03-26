@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { users } from '../data/users';
 import { rankUsers } from '../utils/recommendation';
 import { isFakeProfile } from '../utils/fakeDetection';
 import { UserContext } from '../context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import LogoHeader from '../components/LogoHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DiscoveryScreen = ({ navigation }) => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [connecting, setConnecting] = useState(null);
   const { user, setUser } = useContext(UserContext);
 
   const currentUser = {
@@ -31,33 +33,61 @@ const DiscoveryScreen = ({ navigation }) => {
     setLoading(false);
   };
 
-  const handleConnect = (person) => {
+  const handleConnect = async (person) => {
     if (user.connections?.includes(person.id)) {
-      alert('Already connected');
+      Alert.alert('Already Connected', `You are already connected with ${person.name}`);
       return;
     }
 
-    setUser({
-      ...user,
-      connections: [...(user.connections || []), person.id],
-    });
-
-    alert(`✨ Connected with ${person.name}!`);
+    setConnecting(person.id);
+    
+    // Simulate connection request
+    setTimeout(() => {
+      const updatedConnections = [...(user.connections || []), person.id];
+      setUser({
+        ...user,
+        connections: updatedConnections,
+      });
+      
+      Alert.alert(
+        'Connection Request Sent!',
+        `Connection request sent to ${person.name}. They will be notified.`,
+        [{ text: 'OK' }]
+      );
+      setConnecting(null);
+    }, 1000);
   };
 
-  const handleLogout = () => {
-    setUser({ email: '', skills: [], interests: [], connections: [] });
-    navigation.replace('Login');
+  const handleLogout = async () => {
+    try {
+      // Clear all stored data
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('likedPosts');
+      await AsyncStorage.removeItem('comments');
+      await AsyncStorage.removeItem('messages');
+      
+      // Reset user context
+      setUser({ email: '', skills: [], interests: [], connections: [] });
+      
+      // Navigate to login
+      navigation.replace('Login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    }
   };
+
 
   const getMatchLevel = (score) => {
-    if (score >= 15) return { level: 'Excellent Match', color: '#10B981', icon: 'star' };
-    if (score >= 10) return { level: 'Good Match', color: '#F59E0B', icon: 'thumbs-up' };
-    return { level: 'Potential Match', color: '#6B7280', icon: 'hand' };
+    if (score >= 15) return { level: 'Excellent Match', color: '#10B981', icon: 'star', emoji: '🔥' };
+    if (score >= 10) return { level: 'Good Match', color: '#F59E0B', icon: 'thumbs-up', emoji: '👍' };
+    return { level: 'Potential Match', color: '#6B7280', icon: 'hand', emoji: '👋' };
   };
 
   const renderUserCard = ({ item }) => {
     const matchInfo = getMatchLevel(item.score);
+    const isConnected = user.connections?.includes(item.id);
+    const isConnecting = connecting === item.id;
     
     return (
       <View style={styles.card}>
@@ -104,19 +134,23 @@ const DiscoveryScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.matchContainer}>
-          <Ionicons name={matchInfo.icon} size={16} color={matchInfo.color} />
+          <Text style={styles.matchEmoji}>{matchInfo.emoji}</Text>
           <Text style={[styles.matchText, { color: matchInfo.color }]}>
             {matchInfo.level} • Score: {item.score}
           </Text>
         </View>
 
         <TouchableOpacity
-          style={[styles.button, user.connections?.includes(item.id) && styles.buttonDisabled]}
+          style={[
+            styles.button, 
+            isConnected && styles.buttonDisabled,
+            isConnecting && styles.buttonConnecting
+          ]}
           onPress={() => handleConnect(item)}
-          disabled={user.connections?.includes(item.id)}
+          disabled={isConnected || isConnecting}
         >
           <Text style={styles.buttonText}>
-            {user.connections?.includes(item.id) ? 'Connected' : 'Connect'}
+            {isConnecting ? 'Sending...' : (isConnected ? 'Connected ✓' : 'Connect')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -125,7 +159,7 @@ const DiscoveryScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <LogoHeader screenName="Discovery" onLogout={handleLogout} />
+      <LogoHeader screenName="DiscoveryScreen" onLogout={handleLogout} navigation={navigation} />
       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Discover Peers</Text>
@@ -325,9 +359,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, 
     borderTopColor: '#F3F4F6' 
   },
+  matchEmoji: {
+    fontSize: 14,
+    marginRight: 6,
+  },
   matchText: { 
     fontSize: 12, 
-    marginLeft: 6, 
     fontWeight: '500' 
   },
   button: { 
@@ -338,6 +375,9 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { 
     backgroundColor: '#E5E7EB' 
+  },
+  buttonConnecting: {
+    backgroundColor: '#F59E0B',
   },
   buttonText: { 
     color: '#FFFFFF', 
